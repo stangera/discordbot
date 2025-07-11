@@ -12,6 +12,13 @@ jobs:
     steps:
     - name: Checkout repo
       uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    - name: Restore all .json files from bot-storage branch
+      run: |
+        git fetch origin bot-storage
+        git checkout bot-storage -- *.json || echo "no jsons found"
 
     - name: Install .NET
       uses: actions/setup-dotnet@v3
@@ -22,3 +29,13 @@ jobs:
       run: dotnet ./publish/DiscordBot.dll
       env:
         TOKEN: ${{ secrets.TOKEN }}
+
+    - name: Save all .json files back to bot-storage branch
+      run: |
+        git config --global user.name "github-actions"
+        git config --global user.email "bot@github.com"
+
+        git checkout -B bot-storage
+        git add *.json
+        git commit -m "update json data" || echo "no changes"
+        git push origin bot-storage --force
