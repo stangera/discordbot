@@ -19,6 +19,6 @@ jobs:
         dotnet-version: 8.0.x
 
     - name: Run Discord bot
-      run: dotnet ./publish/publish/DiscordBot.dll
+      run: dotnet ./publish/DiscordBot.dll
       env:
         TOKEN: ${{ secrets.TOKEN }}
