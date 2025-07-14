@@ -29,7 +29,7 @@ jobs:
           dotnet-version: 8.0.x
 
       - name: Create token.txt in publish folder from secret
-        run: echo "${{ secrets.TOKEN }}" > ./publish/token.txt
+        run: echo "${{ secrets.TOKEN }}" > token.txt
 
       - name: Copy json files to publish folder
         run: |
