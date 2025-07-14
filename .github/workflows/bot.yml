@@ -18,28 +18,33 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Fetch and switch to bot-storage branch
+        run: |
+          git fetch origin bot-storage
+          git switch bot-storage
+
       - name: Install .NET
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: 8.0.x
 
-      - name: Load json files from bot-storage branch
+      - name: Copy json files to publish folder
         run: |
-          git fetch origin bot-storage
-          git restore --source=origin/bot-storage -- "*.json"
+          cp ./*.json ./publish/ || echo "no jsons to copy"
 
-      - name: Run Discord bot (from main branch)
+      - name: Run Discord bot
         run: |
           dotnet ./publish/DiscordBot.dll
 
-      - name: Save updated jsons to bot-storage branch
+      - name: Save all .json files back to bot-storage branch
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "bot@github.com"
 
-          git checkout bot-storage
-          git add *.json || echo "no jsons to add"
+          find . -name "*.json" -exec git add {} +
+
           git commit -m "update json data" || echo "no changes"
 
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+
           git push origin bot-storage --force
