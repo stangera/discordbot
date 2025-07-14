@@ -18,10 +18,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Restore all .json files from bot-storage branch
+      - name: Restore all files from bot-storage branch
         run: |
           git fetch origin bot-storage
-          git checkout bot-storage -- '*.json' || echo "no jsons found"
+          git checkout bot-storage -- . || echo "no files found"
 
       - name: Install .NET
         uses: actions/setup-dotnet@v3
@@ -35,15 +35,11 @@ jobs:
 
       - name: Copy json files to publish folder
         run: |
-          cp -t ./publish/ ./*.json 2>/dev/null || echo "no jsons to copy"
+          find . -maxdepth 1 -name "*.json" -exec cp {} ./publish/ \; || echo "no jsons to copy"
 
       - name: Run Discord bot
         run: |
           dotnet ./publish/DiscordBot.dll
-
-      - name: Debug:Show found json files
-        run: |
-          find . -name "*.json"
 
       - name: Save all .json files back to bot-storage branch
         run: |
