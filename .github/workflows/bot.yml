@@ -5,6 +5,9 @@ on:
     - cron: "0 */6 * * *"
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   run-bot:
     runs-on: ubuntu-latest
@@ -25,15 +28,10 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
-      #- name: Run Discord bot
-      #  run: |
-      #    dotnet ./publish/DiscordBot.dll
-
       - name: Run Discord bot (auto-terminate after 1 min)
         run: |
           timeout 60s dotnet ./publish/DiscordBot.dll || true
 
-      
       - name: Debug:Show found json files
         run: |
           find . -name "*.json"
@@ -42,15 +40,13 @@ jobs:
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "bot@github.com"
-      
+
           git checkout -B bot-storage
-      
+
           find . -name "*.json" -exec git add {} +
-      
+
           git commit -m "update json data" || echo "no changes"
-      
+
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
-      
+
           git push origin bot-storage --force
-
-
