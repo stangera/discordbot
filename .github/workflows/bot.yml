@@ -25,10 +25,15 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
-      - name: Run Discord bot
-        run: |
-          dotnet ./publish/DiscordBot.dll
+      #- name: Run Discord bot
+      #  run: |
+      #    dotnet ./publish/DiscordBot.dll
 
+      - name: Run Discord bot (auto-terminate after 1 min)
+        run: |
+          timeout 60s dotnet ./publish/DiscordBot.dll || true
+
+      
       - name: Debug:Show found json files
         run: |
           find . -name "*.json"
