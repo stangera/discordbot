@@ -28,9 +28,14 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
+      - name: Debug:show current directory and json files
+        run: |
+          pwd
+          find . -name "*.json"
+
       - name: Copy json files to publish folder
         run: |
-          cp ./*.json ./publish/ || echo "no jsons to copy"
+          cp -t ./publish/ ./*.json 2>/dev/null || echo "no jsons to copy"
 
       - name: Run Discord bot
         run: |
