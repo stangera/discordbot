@@ -28,6 +28,9 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
+      - name: Create token.txt in publish folder from secret
+        run: echo "${{ secrets.TOKEN_FILE }}" > ./publish/token.txt
+
       - name: Copy json files to publish folder
         run: |
           cp ./*.json ./publish/ || echo "no jsons to copy"
