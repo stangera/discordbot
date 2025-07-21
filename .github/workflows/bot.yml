@@ -13,41 +13,31 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo (main branch)
+      - name: Checkout bot-storage branch directly
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
-
-      - name: Fetch and switch to bot-storage branch
-        run: |
-          git fetch origin bot-storage
-          git switch bot-storage
+          ref: bot-storage
 
       - name: Install .NET
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: 8.0.x
 
-      - name: Create token.txt in publish folder from secret
-        run: echo "${{ secrets.TOKEN }}" > token.txt
+      - name: Create token.txt inside publish folder
+        run: echo "${{ secrets.TOKEN }}" > publish/token.txt
 
-      - name: Copy json files to publish folder
-        run: |
-          cp ./*.json ./publish/ || echo "no jsons to copy"
+      - name: Run Discord bot from publish folder
+        working-directory: ./publish
+        run: dotnet DiscordBot.dll
 
-      - name: Run Discord bot
-        run: |
-          dotnet ./publish/DiscordBot.dll
-
-      - name: Save all .json files back to bot-storage branch
+      - name: Commit and push any changed .json files inside publish folder
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "bot@github.com"
 
-          find . -name "*.json" -exec git add {} +
-
+          git add publish/*.json || echo "no jsons found"
           git commit -m "update json data" || echo "no changes"
 
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
-
           git push origin bot-storage --force
