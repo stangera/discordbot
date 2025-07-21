@@ -27,9 +27,9 @@ jobs:
       - name: Create token.txt inside publish folder
         run: echo "${{ secrets.TOKEN }}" > publish/token.txt
 
-      - name: Run Discord bot from publish folder
+      - name: Run Discord bot from publish folder (timeout after 20s)
         working-directory: ./publish
-        run: dotnet DiscordBot.dll
+        run: timeout 20s dotnet DiscordBot.dll || echo "bot timed out"
 
       - name: Commit and push any changed .json files inside publish folder
         run: |
