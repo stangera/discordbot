@@ -31,13 +31,13 @@ jobs:
         working-directory: ./publish
         run: timeout 20s dotnet DiscordBot.dll || echo "bot timed out"
 
-      - name: Commit and push any changed .json files inside publish folder
+      - name: Commit and push any changed files inside publish folder
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "bot@github.com"
 
-          git add publish/*.json || echo "no jsons found"
-          git commit -m "update json data" || echo "no changes"
+          git add publish/ || echo "nothing to add"
+          git commit -m "update data" || echo "no changes"
 
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
           git push origin bot-storage --force
