@@ -13,6 +13,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Basic lock check (primitive mutex)
+        run: |
+          LOCK_FILE="/tmp/bot-lock"
+
+          while [ -f "$LOCK_FILE" ]; do
+            echo "Another workflow is running. Waiting..."
+            sleep 30
+          done
+
+          touch "$LOCK_FILE"
+
       - name: Checkout bot-storage branch directly
         uses: actions/checkout@v3
         with:
@@ -46,3 +57,8 @@ jobs:
 
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
           git push origin bot-storage --force
+
+      - name: Remove lock (unlock)
+        run: |
+          LOCK_FILE="/tmp/bot-lock"
+          rm -f "$LOCK_FILE"
