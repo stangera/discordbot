@@ -13,16 +13,32 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Basic lock check (primitive mutex)
+      - name: Checkout repo
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # required for branch operations
+
+      - name: Acquire lock (mutex via git branch)
+        id: acquire-lock
         run: |
-          LOCK_FILE="/tmp/bot-lock"
+          git config --global user.name "github-actions"
+          git config --global user.email "bot@github.com"
+          
+          LOCK_BRANCH="workflow-lock"
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
-          while [ -f "$LOCK_FILE" ]; do
-            echo "Another workflow is running. Waiting..."
-            sleep 30
-          done
+          git fetch origin $LOCK_BRANCH || true
 
-          touch "$LOCK_FILE"
+          # try to create/update the lock branch
+          git switch --orphan $LOCK_BRANCH || git switch $LOCK_BRANCH
+          echo "locked at $TIMESTAMP" > lock.txt
+          git add lock.txt
+          git commit -m "acquire lock at $TIMESTAMP" || exit 1
+
+          git push origin $LOCK_BRANCH 2>/dev/null || {
+            echo "Another workflow is running. Exiting."
+            exit 1
+          }
 
       - name: Checkout bot-storage branch directly
         uses: actions/checkout@v3
@@ -58,7 +74,7 @@ jobs:
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
           git push origin bot-storage --force
 
-      - name: Remove lock (unlock)
+      - name: Release lock (delete lock branch)
+        if: steps.acquire-lock.outcome == 'success'
         run: |
-          LOCK_FILE="/tmp/bot-lock"
-          rm -f "$LOCK_FILE"
+          git push origin --delete workflow-lock || echo "lock branch already gone"
