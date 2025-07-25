@@ -16,29 +16,38 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0  # required for branch operations
+          fetch-depth: 0
 
-      - name: Acquire lock (mutex via git branch)
-        id: acquire-lock
+      - name: Acquire lock via git branch
+        id: lock
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "bot@github.com"
-          
-          LOCK_BRANCH="workflow-lock"
-          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
+          LOCK_BRANCH="workflow-lock"
           git fetch origin $LOCK_BRANCH || true
 
-          # try to create/update the lock branch
-          git switch --orphan $LOCK_BRANCH || git switch $LOCK_BRANCH
-          echo "locked at $TIMESTAMP" > lock.txt
-          git add lock.txt
-          git commit -m "acquire lock at $TIMESTAMP" || exit 1
+          # read lock timestamp
+          LOCK_TIME=$(git show origin/$LOCK_BRANCH:lock.txt 2>/dev/null || echo "1970-01-01T00:00:00Z")
+          LOCK_UNIX=$(date -d "$LOCK_TIME" +%s 2>/dev/null || echo 0)
+          NOW_UNIX=$(date -u +%s)
+          AGE_SEC=$((NOW_UNIX - LOCK_UNIX))
 
-          git push origin $LOCK_BRANCH 2>/dev/null || {
+          echo "🔒 lock branch timestamp: $LOCK_TIME"
+          echo "⏱️ lock age: $AGE_SEC seconds"
+
+          if [ "$AGE_SEC" -lt 21600 ]; then  # 6 hours
             echo "Another workflow is running. Exiting."
             exit 1
-          }
+          fi
+
+          # acquire lock by force-pushing lock branch
+          git switch --orphan $LOCK_BRANCH || git switch $LOCK_BRANCH
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          echo "$TIMESTAMP" > lock.txt
+          git add lock.txt
+          git commit -m "lock at $TIMESTAMP" || true
+          git push origin $LOCK_BRANCH --force
 
       - name: Checkout bot-storage branch directly
         uses: actions/checkout@v3
@@ -54,27 +63,27 @@ jobs:
       - name: Create token.txt inside publish folder (but don't track)
         run: echo "${{ secrets.TOKEN }}" > publish/token.txt
 
-      - name: Run Discord bot from publish folder (no timeout)
+      - name: Run Discord bot
         working-directory: ./publish
         run: dotnet DiscordBot.dll
 
       - name: Prevent token.txt from being committed
         run: |
           echo "publish/token.txt" >> .gitignore
-          git rm --cached publish/token.txt || echo "token.txt not tracked"
+          git rm --cached publish/token.txt || true
 
-      - name: Commit and push any changed files inside publish folder
+      - name: Commit and push changes to bot-storage
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "bot@github.com"
 
-          git add publish/ || echo "nothing to add"
-          git commit -m "update data" || echo "no changes"
+          git add publish/ || true
+          git commit -m "update data" || true
 
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
           git push origin bot-storage --force
 
-      - name: Release lock (delete lock branch)
-        if: steps.acquire-lock.outcome == 'success'
+      - name: Release lock
+        if: always()  # run this even if job failed or was cancelled
         run: |
-          git push origin --delete workflow-lock || echo "lock branch already gone"
+          git push origin --delete workflow-lock || echo "Lock already removed"
