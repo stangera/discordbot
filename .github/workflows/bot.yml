@@ -35,10 +35,13 @@ jobs:
           echo "🔒 lock branch timestamp: $LOCK_TIME"
           echo "⏱️ lock age: $AGE_SEC seconds"
 
-          if [ "$AGE_SEC" -lt 21600 ]; then  # 6 часов
-            echo "Another workflow is running. Exiting."
-            exit 1
+          if [ "$AGE_SEC" -lt 21600 ]; then
+            echo "Another workflow is running. Skipping run, but not failing."
+            echo "skip-run=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip-run=false" >> $GITHUB_OUTPUT
           fi
+
 
           git switch --orphan $LOCK_BRANCH || git switch $LOCK_BRANCH
           TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
