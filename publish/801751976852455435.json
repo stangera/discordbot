@@ -1,8 +1,15 @@
 {
   "1226420710935756813": {
-    "Balance": 405.0,
+    "Balance": 497.0,
     "Inventory": {},
-    "LastWorkTime": "2025-07-25T16:25:53",
+    "LastWorkTime": "2025-07-26T06:18:51",
+    "GambleTime": "0001-01-01T00:00:00",
+    "CollectTime": "0001-01-01T00:00:00"
+  },
+  "978729346007191593": {
+    "Balance": 268.0,
+    "Inventory": {},
+    "LastWorkTime": "2025-07-26T06:42:35.4835698Z",
     "GambleTime": "0001-01-01T00:00:00",
     "CollectTime": "0001-01-01T00:00:00"
   }
